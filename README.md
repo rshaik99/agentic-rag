@@ -14,9 +14,37 @@ a calculator and live web search, inside a ReAct loop (reason → pick a tool
 call, in what order, how many times — based on the question, not on
 hardcoded branching.
 
+```mermaid
+flowchart TD
+    Q[User question] --> A{Agent reasons<br/>gpt-4.1}
+
+    A -->|needs internal docs| RS[rag_search]
+    A -->|needs external info| WS[web_search]
+    A -->|needs arithmetic| CALC[calculator]
+    A -->|enough to answer| ANS[Final answer<br/>R#/W# citations]
+
+    RS --> RSQ[Qdrant hybrid retrieval<br/>dense + sparse, RRF fusion]
+    RSQ --> RSR[Cross-encoder rerank<br/>+ score floor]
+    RSR -->|below floor| NE[NO_EVIDENCE]
+    RSR -->|above floor| RR["sources R1, R2, ..."]
+
+    WS --> WSR[Tavily search]
+    WSR --> WR["results W1, W2, ..."]
+
+    CALC --> CR[AST-evaluated result]
+
+    NE --> A
+    RR --> A
+    WR --> A
+    CR --> A
 ```
-question -> LLM reasons -> calls a tool -> observes result -> LLM reasons again -> ... -> final answer
-```
+
+Every tool result loops back into the agent's reasoning step — it's not a
+fixed sequence. A question needing figures **and** a derived percentage
+**and** an external comparison chains `rag_search` → `calculator` →
+`web_search` in one turn, purely because the LLM decided each step was
+needed after seeing the previous result (verified in testing, not just
+theoretical).
 
 ## Tools
 
