@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 
 LLM_MODEL = os.getenv("AGENT_LLM_MODEL", "gpt-4.1")
 TEMPERATURE = 0.0
