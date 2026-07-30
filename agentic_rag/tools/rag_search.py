@@ -61,18 +61,23 @@ def _get_reranker() -> _ScoringCrossEncoderReranker:
 def search(query: str) -> str:
     """Search the indexed document corpus. Returns numbered sources with
     citations, or an explicit no-evidence message -- never a bare guess."""
-    store = _get_store()
-    candidates = store.similarity_search(query, k=config.FUSED_TOP_N)
-    docs: list[Document] = _get_reranker().compress_documents(candidates, query)
+    try:
+        store = _get_store()
+        candidates = store.similarity_search(query, k=config.FUSED_TOP_N)
+        docs: list[Document] = _get_reranker().compress_documents(candidates, query)
+    except Exception as e:                                       # noqa: BLE001
+        return f"ERROR: rag_search failed ({e.__class__.__name__}: {e}). Do not treat this as NO_EVIDENCE -- it's a tool failure, not an absence of evidence."
 
     if not docs:
         return "NO_EVIDENCE: nothing in the document corpus scored above the relevance floor for this query."
 
+    # R-prefixed so citations are unambiguous against web_search's W-prefixed
+    # ones by construction, not just by the model's prose labeling them.
     parts = []
     for i, d in enumerate(docs, 1):
         m = d.metadata
         parts.append(
-            f"[{i}] {m.get('file_name')} p.{m.get('page')} "
+            f"[R{i}] {m.get('file_name')} p.{m.get('page')} "
             f"(score={m.get('relevance_score', 0):.3f})\n{d.page_content}"
         )
     return "\n\n".join(parts)

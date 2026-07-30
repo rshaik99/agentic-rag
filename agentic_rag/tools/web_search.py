@@ -35,7 +35,9 @@ def web_search(query: str, max_results: int = 5) -> str:
     if not results:
         return "NO_RESULTS: web search returned nothing for this query."
 
+    # W-prefixed so citations are unambiguous against rag_search's R-prefixed
+    # ones by construction, not just by the model's prose labeling them.
     parts = []
     for i, r in enumerate(results, 1):
-        parts.append(f"[{i}] {r.get('title')} ({r.get('url')})\n{r.get('content', '')[:500]}")
+        parts.append(f"[W{i}] {r.get('title')} ({r.get('url')})\n{r.get('content', '')[:500]}")
     return "\n\n".join(parts)
